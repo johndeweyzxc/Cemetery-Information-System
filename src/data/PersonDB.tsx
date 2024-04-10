@@ -10,6 +10,7 @@ import {
   getFirestore,
   onSnapshot,
   query,
+  setDoc,
   where,
 } from "firebase/firestore";
 import {
@@ -50,7 +51,9 @@ class PersonDB {
         console.log(
           `PersonDB.UploadReservation: Document written in Reservations with id ${doc.id}`
         );
-        console.log(JSON.stringify(reserve, null, 2));
+        console.log(
+          `PersonDB.UploadReservation: ${JSON.stringify(reserve, null, 2)}`
+        );
         cb(true);
       })
       .catch((reason) => {
@@ -101,7 +104,9 @@ class PersonDB {
         console.log(
           `PersonDB.AccomodatePerson: Document written in DeceasedPersons with id ${doc.id}`
         );
-        console.log(JSON.stringify(accomodate, null, 2));
+        console.log(
+          `PersonDB.AccomodatePerson: ${JSON.stringify(accomodate, null, 2)}`
+        );
         cb(true);
       })
       .catch((reason) => {
@@ -134,7 +139,7 @@ class PersonDB {
       });
   }
 
-  static async IsGraveSlotAvailable(
+  static async IsAvailaleForAccommodation(
     location: number,
     cb: (isOccupied: boolean) => void
   ) {
@@ -147,12 +152,12 @@ class PersonDB {
       .then((snapshot) => {
         if (snapshot.docs.length > 0) {
           console.log(
-            `PersonDB.IsGraveSlotAvailable: Grave location ${location} is already occupied`
+            `PersonDB.IsAvailaleForAccommodation: Grave location ${location} is already occupied`
           );
           cb(true);
         } else if (snapshot.docs.length === 0) {
           console.log(
-            `PersonDB.IsGraveSlotAvailable: Grave location ${location} is free`
+            `PersonDB.IsAvailaleForAccommodation: Grave location ${location} is free`
           );
           cb(false);
         }
@@ -160,7 +165,7 @@ class PersonDB {
       .catch((reason) => {
         if (reason !== null || reason !== undefined) {
           console.log(
-            `PersonDB.IsGraveSlotAvailable: There is an error checking grave location at ${location}`
+            `PersonDB.IsAvailaleForAccommodation: There is an error checking grave location at ${location}`
           );
           console.log(reason);
           cb(false);
@@ -169,8 +174,10 @@ class PersonDB {
   }
 
   static async IsAvailableForReservation(
+    id: string | null,
     location: number,
-    cb: (isAvail: boolean) => void
+    cb: (isAvail: boolean) => void,
+    usingForUpdation: boolean
   ) {
     const q = query(
       collection(db, ColReservations),
@@ -179,7 +186,25 @@ class PersonDB {
 
     await getDocs(q)
       .then((snapshot) => {
-        if (snapshot.docs.length > 0) {
+        // Determine if function is being use for creation of updation
+        if (usingForUpdation && snapshot.docs.length === 1) {
+          const doc = snapshot.docs[0];
+          console.log(
+            `PersonDB.IsAvailableForReservation: Comparing two ids: ${id}, ${doc.id}`
+          );
+
+          if (doc.id !== id) {
+            console.log(
+              `PersonDB.IsAvailableForReservation: ID not equal: ${id}, ${doc.id}`
+            );
+            cb(false);
+          } else {
+            console.log(
+              "PersonDB.IsAvailableForReservation: Found one grave location, function being use for updation"
+            );
+            cb(true);
+          }
+        } else if (snapshot.docs.length > 0) {
           console.log(
             `PersonDB.IsAvailableForReservation: Grave location ${location} has already been reserve`
           );
@@ -220,6 +245,42 @@ class PersonDB {
 
       cb(reservations);
     });
+  }
+
+  static async EditReservation(
+    id: string,
+    person: UniqueReservations,
+    cb: (isSuccess: boolean) => void
+  ) {
+    console.log("PersonDB.EditReservation: Updating");
+    console.log(`PersonDB.EditReservation: ${JSON.stringify(person, null, 2)}`);
+
+    await setDoc(
+      doc(db, "Reservations", id),
+      {
+        ClientName: person.ClientName,
+        DeceasedPersonName: person.DeceasedPersonName,
+        GraveLocation: person.GraveLocation,
+        Born: person.Born,
+        Died: person.Died,
+      },
+      { merge: true }
+    )
+      .then(() => {
+        console.log(
+          `PersonDB.EditReservation: Document updated in Reservations where id is ${id}`
+        );
+        cb(true);
+      })
+      .catch((error) => {
+        if (error !== null || error !== undefined) {
+          console.log(error);
+          console.log(
+            `PersonDB.EditReservation: Failed to update document in Reservations where id is ${id}`
+          );
+          cb(false);
+        }
+      });
   }
 
   static ListenPeople(cb: (people: Object[]) => void) {

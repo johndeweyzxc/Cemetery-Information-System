@@ -1,20 +1,16 @@
-import { useEffect, useState } from "react";
+import { ReactElement, Ref, forwardRef, useEffect, useState } from "react";
 import { DataGrid, GridColDef, GridEventListener } from "@mui/x-data-grid";
 import Box from "@mui/material/Box";
 import {
   AppBar,
-  Button,
   Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Drawer,
   IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Slide,
   Toolbar,
   Typography,
 } from "@mui/material";
@@ -27,6 +23,8 @@ import PersonDB from "../data/PersonDB";
 import Login from "./Login";
 import { UniqueReservations } from "../models/Models";
 import { Timestamp } from "firebase/firestore";
+import { TransitionProps } from "@mui/material/transitions";
+import { EditReserveDialog } from "../components/EditReserveDialog";
 
 interface AdminHeaderProps {
   DrawerOpen: boolean;
@@ -86,6 +84,36 @@ function DrawerList(
       </List>
     </Box>
   );
+}
+
+interface AdminDialogFullscreenProps {
+  OpenDialog: boolean;
+  SetOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  Person: UniqueReservations;
+}
+function AdminDialogFullscreen(props: AdminDialogFullscreenProps) {
+  const transition = forwardRef(function Transition(
+    props: TransitionProps & {
+      children: ReactElement;
+    },
+    ref: Ref<unknown>
+  ) {
+    return <Slide direction="up" ref={ref} {...props} />;
+  });
+
+  return props.OpenDialog ? (
+    <Dialog
+      fullScreen
+      open={props.OpenDialog}
+      onClose={() => props.SetOpenDialog(false)}
+      TransitionComponent={transition}
+    >
+      <EditReserveDialog
+        Person={props.Person}
+        SetOpenThisDialog={props.SetOpenDialog}
+      />
+    </Dialog>
+  ) : null;
 }
 
 interface AdminMainComponentProps {
@@ -161,77 +189,17 @@ function AdminMainComponent(props: AdminMainComponentProps) {
     setOpenDialog(true);
   };
 
-  const deleteReservationRequest = () => {
-    const cb = (isSuccess: boolean) => {
-      if (!isSuccess) {
-        alert("Failed to delete document in Reservations");
-      }
-    };
-    PersonDB.DeleteReservation(person.id, cb);
-    setOpenDialog(false);
-  };
-
-  const approveReservationRequest = () => {
-    const cbApprove = (isSuccess: boolean) => {
-      if (!isSuccess) {
-        alert(
-          "While approving reservation request it failed to add document in DeceasedPersons"
-        );
-      }
-    };
-
-    const cbDelete = (isSuccess: boolean) => {
-      if (!isSuccess) {
-        alert(
-          "While approving reservation request it failed to delete document in Reservations"
-        );
-      } else {
-        PersonDB.AccomodatePerson(person, cbApprove);
-      }
-    };
-
-    const cbCheckSlot = (isOccupied: boolean) => {
-      if (isOccupied) {
-        alert(`Grave location ${person.GraveLocation} is already occupied`);
-      } else {
-        PersonDB.DeleteReservation(person.id, cbDelete);
-      }
-    };
-
-    PersonDB.IsGraveSlotAvailable(person.GraveLocation, cbCheckSlot);
-    setOpenDialog(false);
-  };
-
   return (
     <>
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         {DrawerList(setDrawerOpen)}
       </Drawer>
-      <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">
-          {"Approve reservation?"}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Do you want to approve reservation request and allocate slot for the
-            deceased person {person.DeceasedPersonName}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button color="error" onClick={deleteReservationRequest}>
-            Delete
-          </Button>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={approveReservationRequest} autoFocus>
-            Approve
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* <AdminDialog
+        OpenDialog={openDialog}
+        SetOpenDialog={setOpenDialog}
+        Person={person}
+      /> */}
+
       <div className="font-inter">
         <AdminHeader DrawerOpen={drawerOpen} SetDrawerOpen={setDrawerOpen} />
         <section className="mx-8 my-8">
@@ -253,6 +221,11 @@ function AdminMainComponent(props: AdminMainComponentProps) {
           </Box>
         </section>
       </div>
+      <AdminDialogFullscreen
+        OpenDialog={openDialog}
+        Person={person}
+        SetOpenDialog={setOpenDialog}
+      />
     </>
   );
 }

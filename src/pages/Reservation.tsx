@@ -5,6 +5,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import {
+  Alert,
   AppBar,
   Box,
   Dialog,
@@ -19,6 +20,7 @@ import {
   ListItemIcon,
   ListItemText,
   MenuItem,
+  Snackbar,
   TextField,
   Toolbar,
   Typography,
@@ -85,6 +87,13 @@ function ReservationHeader(props: AdminHeaderProps) {
 interface ReservationFormProps {
   SetOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
   SetDialogText: React.Dispatch<React.SetStateAction<string>>;
+  SetSnackBar: React.Dispatch<
+    React.SetStateAction<{
+      isOpen: boolean;
+      text: string;
+      severity: string;
+    }>
+  >;
 }
 function ReservationForm(props: ReservationFormProps) {
   // TODO: Check all available slot in the database and only show available slot in the UI
@@ -103,7 +112,15 @@ function ReservationForm(props: ReservationFormProps) {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(JSON.stringify(deceasedPerson));
+    // TODO: Implement input validation
+    if (deceasedPerson.ClientName.length === 0) {
+      props.SetSnackBar({
+        isOpen: true,
+        text: "Text input cannot be empty",
+        severity: "error",
+      });
+      return;
+    }
 
     const cbUpload = (isSuccess: boolean) => {
       if (isSuccess) {
@@ -125,8 +142,10 @@ function ReservationForm(props: ReservationFormProps) {
     };
 
     PersonDB.IsAvailableForReservation(
+      null,
       deceasedPerson.GraveLocation,
-      cbAvailability
+      cbAvailability,
+      false
     );
   };
 
@@ -258,6 +277,26 @@ function Reservation() {
   );
   const [openDialog, setOpenDialog] = useState(false);
 
+  // Snackbar
+  const [snackBar, setSnackBar] = useState({
+    isOpen: false,
+    text: "",
+    severity: "success",
+  });
+  const closeSnackbar = (
+    event?: React.SyntheticEvent | Event,
+    reason?: string
+  ) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackBar({
+      isOpen: false,
+      text: snackBar.text,
+      severity: snackBar.severity,
+    });
+  };
+
   return (
     <>
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
@@ -289,8 +328,34 @@ function Reservation() {
         <ReservationForm
           SetOpenDialog={setOpenDialog}
           SetDialogText={setDialogText}
+          SetSnackBar={setSnackBar}
         />
       </section>
+      <Snackbar
+        open={snackBar.isOpen}
+        autoHideDuration={5000}
+        onClose={closeSnackbar}
+      >
+        {snackBar.severity === "success" ? (
+          <Alert
+            onClose={closeSnackbar}
+            severity="success"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackBar.text}
+          </Alert>
+        ) : (
+          <Alert
+            onClose={closeSnackbar}
+            severity="error"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackBar.text}
+          </Alert>
+        )}
+      </Snackbar>
     </>
   );
 }
