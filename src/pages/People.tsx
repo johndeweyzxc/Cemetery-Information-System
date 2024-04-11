@@ -3,18 +3,14 @@ import Box from "@mui/material/Box";
 import { DataGrid, GridColDef, GridEventListener } from "@mui/x-data-grid";
 import {
   AppBar,
-  Button,
   Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Drawer,
   IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Slide,
   Toolbar,
   Typography,
 } from "@mui/material";
@@ -23,9 +19,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import PersonDB from "../data/PersonDB";
-import { useEffect, useState } from "react";
+import { ReactElement, Ref, forwardRef, useEffect, useState } from "react";
 import { UniqueAccomodatedPersons } from "../models/Models";
 import { Timestamp } from "firebase/firestore";
+import { TransitionProps } from "@mui/material/transitions";
+import { EditPeopleDialog } from "../components/EditPeopleDialog";
 
 function DrawerList(
   isLoggedIn: boolean,
@@ -89,6 +87,36 @@ function PeopleHeader(props: PeopleHeaderProps) {
       </Toolbar>
     </AppBar>
   );
+}
+
+interface PeopleDialogFullscreenProps {
+  OpenDialog: boolean;
+  SetOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  Person: UniqueAccomodatedPersons;
+}
+function PeopleDialogFullscreen(props: PeopleDialogFullscreenProps) {
+  const transition = forwardRef(function Transition(
+    props: TransitionProps & {
+      children: ReactElement;
+    },
+    ref: Ref<unknown>
+  ) {
+    return <Slide direction="up" ref={ref} {...props} />;
+  });
+
+  return props.OpenDialog ? (
+    <Dialog
+      fullScreen
+      open={props.OpenDialog}
+      onClose={() => props.SetOpenDialog(false)}
+      TransitionComponent={transition}
+    >
+      <EditPeopleDialog
+        Person={props.Person}
+        SetOpenThisDialog={props.SetOpenDialog}
+      />
+    </Dialog>
+  ) : null;
 }
 
 function People() {
@@ -182,38 +210,11 @@ function People() {
     }
   };
 
-  const deleteCb = (isSuccess: boolean) => {
-    if (!isSuccess) {
-      alert("Failed to delete document in DeceasedPersons");
-    }
-  };
-
   return (
     <>
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         {DrawerList(isLoggedIn, setDrawerOpen)}
       </Drawer>
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>{"Delete document"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Do you want to delete document with id {person.id} from the
-            database?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Close</Button>
-          <Button
-            color="error"
-            onClick={() => {
-              PersonDB.DeletePerson(person.id, deleteCb);
-              setOpenDialog(false);
-            }}
-          >
-            Delete Person
-          </Button>
-        </DialogActions>
-      </Dialog>
       <div className="font-inter">
         <PeopleHeader DrawerOpen={drawerOpen} SetDrawerOpen={setDrawerOpen} />
         <section className="mx-8 my-8">
@@ -235,6 +236,11 @@ function People() {
           </Box>
         </section>
       </div>
+      <PeopleDialogFullscreen
+        OpenDialog={openDialog}
+        Person={person}
+        SetOpenDialog={setOpenDialog}
+      />
     </>
   );
 }

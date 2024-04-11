@@ -4,10 +4,10 @@ Cemetery Information System is a system for for managing deceased persons inform
 
 ## Functions
 
-- Create reservation requests
-- Read deceased person document
-- (Admin only) Read/Approve/Update/Delete reservation requests document
-- (Admin only) Read/Delete deceased person document
+- (Client users) Create reservation requests
+- (Client users) Read deceased person document
+- (Admin only) Read/Approve/Create/Update/Delete reservation requests document
+- (Admin only) Read/Write deceased person document
 
 ## Quick Preview
 

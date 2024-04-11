@@ -194,12 +194,6 @@ function AdminMainComponent(props: AdminMainComponentProps) {
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         {DrawerList(setDrawerOpen)}
       </Drawer>
-      {/* <AdminDialog
-        OpenDialog={openDialog}
-        SetOpenDialog={setOpenDialog}
-        Person={person}
-      /> */}
-
       <div className="font-inter">
         <AdminHeader DrawerOpen={drawerOpen} SetDrawerOpen={setDrawerOpen} />
         <section className="mx-8 my-8">

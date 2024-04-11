@@ -15,20 +15,20 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
 import PersonIcon from "@mui/icons-material/Person";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
 import PublishIcon from "@mui/icons-material/Publish";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import CloseIcon from "@mui/icons-material/Close";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { UniqueReservations } from "../models/Models";
 import { ChangeEvent, FormEvent, useState } from "react";
+import { UniqueAccomodatedPersons } from "../models/Models";
 import PersonDB from "../data/PersonDB";
 
-interface EditReserveDialogFormProps {
+interface EditPeopleDialogFormProps {
   SetOpenThisDialog: React.Dispatch<React.SetStateAction<boolean>>;
-  Person: UniqueReservations;
+  Person: UniqueAccomodatedPersons;
   SetSnackBar: React.Dispatch<
     React.SetStateAction<{
       isOpen: boolean;
@@ -37,20 +37,20 @@ interface EditReserveDialogFormProps {
     }>
   >;
 }
-function EditReserveDialogForm(props: EditReserveDialogFormProps) {
+function EditPeopleDialogForm(props: EditPeopleDialogFormProps) {
   // TODO: Check all available slot in the database and only show available slot in the UI
   const availaleLocations: number[] = Array.from(
     { length: 30 },
     (_, i) => i + 1
   );
 
-  const [person, setPerson] = useState<UniqueReservations>({
+  const [person, setPerson] = useState<UniqueAccomodatedPersons>({
     ClientName: props.Person.ClientName,
     DeceasedPersonName: props.Person.DeceasedPersonName,
     GraveLocation: props.Person.GraveLocation,
     Born: props.Person.Born,
     Died: props.Person.Died,
-    ReservationCreatedAt: props.Person.ReservationCreatedAt,
+    AccommodatedAt: props.Person.AccommodatedAt,
     id: props.Person.id,
   });
 
@@ -114,8 +114,8 @@ function EditReserveDialogForm(props: EditReserveDialogFormProps) {
       }
     };
 
-    const cbAvailability = (isAvail: boolean | null) => {
-      if (!isAvail) {
+    const cbAvailability = (isOccupied: boolean | null) => {
+      if (isOccupied) {
         props.SetSnackBar({
           isOpen: true,
           text: "Grave location unavailable",
@@ -129,22 +129,22 @@ function EditReserveDialogForm(props: EditReserveDialogFormProps) {
           GraveLocation: props.Person.GraveLocation,
           Born: props.Person.Born,
           Died: props.Person.Died,
-          ReservationCreatedAt: props.Person.ReservationCreatedAt,
+          AccommodatedAt: props.Person.AccommodatedAt,
           id: props.Person.id,
         });
         setBtnDisabled(true);
-      } else if (isAvail === null) {
+      } else if (isOccupied === null) {
         props.SetSnackBar({
           isOpen: true,
           text: "There is an error checking availability of grave location",
           severity: "error",
         });
       } else {
-        PersonDB.EditReservation(person.id, person, cbUpdate);
+        PersonDB.EditPerson(person.id, person, cbUpdate);
       }
     };
 
-    PersonDB.IsAvailableForReservation(
+    PersonDB.IsAvailaleForAccommodation(
       person.id,
       person.GraveLocation,
       cbAvailability,
@@ -253,11 +253,11 @@ function EditReserveDialogForm(props: EditReserveDialogFormProps) {
   );
 }
 
-export interface EditReserveDialogProps {
+export interface EditPeopleDialogProps {
   SetOpenThisDialog: React.Dispatch<React.SetStateAction<boolean>>;
-  Person: UniqueReservations;
+  Person: UniqueAccomodatedPersons;
 }
-export function EditReserveDialog(props: EditReserveDialogProps) {
+export function EditPeopleDialog(props: EditPeopleDialogProps) {
   // Snackbar
   const [snackBar, setSnackBar] = useState({
     isOpen: false,
@@ -284,7 +284,7 @@ export function EditReserveDialog(props: EditReserveDialogProps) {
     text: "",
   });
 
-  const deleteReservationRequest = () => {
+  const deleteAccommodatedPersonRequest = () => {
     const cb = (isSuccess: boolean) => {
       if (!isSuccess) {
         setSnackBar({
@@ -296,59 +296,7 @@ export function EditReserveDialog(props: EditReserveDialogProps) {
         props.SetOpenThisDialog(false);
       }
     };
-    PersonDB.DeleteReservation(props.Person.id, cb);
-  };
-
-  const approveReservationRequest = () => {
-    const cbApprove = (isSuccess: boolean) => {
-      if (!isSuccess) {
-        setSnackBar({
-          isOpen: true,
-          text: "Failed to add document in DeceasedPersons",
-          severity: "error",
-        });
-      } else {
-        props.SetOpenThisDialog(false);
-      }
-    };
-
-    const cbDelete = (isSuccess: boolean) => {
-      if (!isSuccess) {
-        setSnackBar({
-          isOpen: true,
-          text: "Failed to delete document in Reservations",
-          severity: "error",
-        });
-      } else {
-        PersonDB.AccomodatePerson(props.Person, cbApprove);
-      }
-    };
-
-    const cbCheckSlot = (isOccupied: boolean | null) => {
-      if (isOccupied) {
-        setSnackBar({
-          isOpen: true,
-          text: `Grave location ${props.Person.GraveLocation} is already occupied`,
-          severity: "error",
-        });
-      } else if (isOccupied === null) {
-        setSnackBar({
-          isOpen: true,
-          text: "There is an error checking availability of grave location",
-          severity: "error",
-        });
-      } else {
-        PersonDB.DeleteReservation(props.Person.id, cbDelete);
-      }
-    };
-
-    PersonDB.IsAvailaleForAccommodation(
-      null,
-      props.Person.GraveLocation,
-      cbCheckSlot,
-      false
-    );
-    props.SetOpenThisDialog(false);
+    PersonDB.DeletePerson(props.Person.id, cb);
   };
 
   return (
@@ -379,9 +327,6 @@ export function EditReserveDialog(props: EditReserveDialogProps) {
           >
             Delete
           </Button>
-          <Button color="inherit" onClick={approveReservationRequest}>
-            Approve
-          </Button>
         </Toolbar>
       </AppBar>
 
@@ -399,7 +344,7 @@ export function EditReserveDialog(props: EditReserveDialogProps) {
           <DialogContentText>{dialog.text}</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button color="error" onClick={deleteReservationRequest}>
+          <Button color="error" onClick={deleteAccommodatedPersonRequest}>
             Delete
           </Button>
           <Button
@@ -416,7 +361,7 @@ export function EditReserveDialog(props: EditReserveDialogProps) {
       </Dialog>
 
       <section className="my-12 flex justify-center items-center ml-4 mr-4">
-        <EditReserveDialogForm
+        <EditPeopleDialogForm
           Person={props.Person}
           SetSnackBar={setSnackBar}
           SetOpenThisDialog={props.SetOpenThisDialog}

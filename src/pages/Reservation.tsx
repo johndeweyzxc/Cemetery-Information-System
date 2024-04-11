@@ -130,12 +130,18 @@ function ReservationForm(props: ReservationFormProps) {
       }
     };
 
-    const cbAvailability = (isAvail: boolean) => {
+    const cbAvailability = (isAvail: boolean | null) => {
       if (!isAvail) {
         props.SetDialogText(
           `Grave location ${deceasedPerson.GraveLocation} is not available for reservation, please select another grave location.`
         );
         props.SetOpenDialog(true);
+      } else if (isAvail === null) {
+        props.SetSnackBar({
+          isOpen: true,
+          text: "There is an error checking availability of grave location",
+          severity: "error",
+        });
       } else {
         PersonDB.UploadReservation(deceasedPerson, cbUpload);
       }
