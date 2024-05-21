@@ -32,7 +32,11 @@ function DrawerList(
   let logoutBtn;
   if (isLoggedIn) {
     logoutBtn = (
-      <ListItemButton>
+      <ListItemButton
+        onClick={() => {
+          PersonDB.SignOutAsAdmin();
+        }}
+      >
         <ListItemIcon>
           <LogoutIcon />
         </ListItemIcon>
